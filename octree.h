@@ -173,7 +173,7 @@ namespace OrthoTree
 
   template<class adaptor_type, typename vector_type, typename box_type, typename geometry_type = double>
   concept AdaptorConcept =
-    requires { AdaptorBasicsConcept<adaptor_type, vector_type, box_type, geometry_type>; } && requires(box_type const& box, vector_type const& point) {
+    requires { requires AdaptorBasicsConcept<adaptor_type, vector_type, box_type, geometry_type>; } && requires(box_type const& box, vector_type const& point) {
       {
         adaptor_type::does_box_contain_point(box, point)
       } -> std::convertible_to<bool>;
@@ -783,7 +783,7 @@ namespace OrthoTree
     struct BoxDistance : ItemDistance
     {
       morton_node_id_type NodeKey;
-      Node const& Node;
+      Node const& NodeReference;
     };
 
     template<typename data_type>
@@ -1280,7 +1280,7 @@ namespace OrthoTree
       struct Search
       {
         morton_node_id_type Key;
-        Node const& Node;
+        Node const& NodeReference;
         depth_type DepthID;
         bool DoAvoidSelection;
       };
