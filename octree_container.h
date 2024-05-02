@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2021 Attila Csikós
+Copyright (c) 2021 Attila Csikï¿½s
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -344,15 +344,15 @@ namespace OrthoTree
   public: // Ray intersection
     // Get all Box which is intersected by the ray in order
     inline std::vector<std::size_t> RayIntersectedAll(
-      TVector const& rayBasePoint, TVector const& rayHeading, TGeometry tolerance, TGeometry maxDistance = std::numeric_limits<TGeometry>::max()) const noexcept
+      TRay const& ray, TGeometry tolerance, TGeometry maxDistance = std::numeric_limits<TGeometry>::max()) const noexcept
     {
-      return this->m_tree.RayIntersectedAll(rayBasePoint, rayHeading, this->m_geometryCollection, tolerance, maxDistance);
+      return this->m_tree.RayIntersectedAll(ray, this->m_geometryCollection, tolerance, maxDistance);
     }
 
     // Get first Box which is intersected by the ray
-    inline std::optional<std::size_t> RayIntersectedFirst(TVector const& rayBasePoint, TVector const& rayHeading, TGeometry tolerance) const noexcept
+    inline std::optional<std::size_t> RayIntersectedFirst(TRay const& ray, TGeometry tolerance) const noexcept
     {
-      return this->m_tree.RayIntersectedFirst(rayBasePoint, rayHeading, this->m_geometryCollection, tolerance);
+      return this->m_tree.RayIntersectedFirst(ray, this->m_geometryCollection, tolerance);
     }
 
   public: // Plane

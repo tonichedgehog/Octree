@@ -167,8 +167,8 @@ void testCompileBox()
     autoc aidBoxesInRangeF = tree.template RangeSearch<false>(boxes[0], boxes);
     autoc aidBoxesInRangeT = tree.template RangeSearch<true>(boxes[0], boxes);
 
-    autoc idBoxesIntersectedAll = tree.RayIntersectedAll({}, { 1.0, 1.0 }, boxes, 0);
-    autoc idBoxesIntersectedFirst = tree.RayIntersectedFirst({}, { 1.0, 1.0 }, boxes, 0);
+    autoc idBoxesIntersectedAll = tree.RayIntersectedAll({{}, { 1.0, 1.0 }}, boxes, 0);
+    autoc idBoxesIntersectedFirst = tree.RayIntersectedFirst({{}, { 1.0, 1.0 }}, boxes, 0);
 
     autoc idPlaneIntersected = tree.PlaneIntersection(1.0, { 1.0, 0.0 }, 0.0, boxes);
     autoc idPlaneIntersectedP = tree.PlaneIntersection({1.0, { 1.0, 0.0 }}, 0.0, boxes);
@@ -304,8 +304,8 @@ void testCompileBoxC()
     autoc vidCollision = tree.template CollisionDetection<execution_policy_type>();
     autoc vidCollisionTree = tree.CollisionDetection(tree);
    
-    autoc idBoxesIntersectedAll = tree.RayIntersectedAll({}, { 1.0, 1.0 }, 0);
-    autoc idBoxesIntersectedFirst = tree.RayIntersectedFirst({}, { 1.0, 1.0 }, 0);
+    autoc idBoxesIntersectedAll = tree.RayIntersectedAll({{}, { 1.0, 1.0 }}, 0);
+    autoc idBoxesIntersectedFirst = tree.RayIntersectedFirst({{}, { 1.0, 1.0 }}, 0);
 
     autoc idPlaneIntersected = tree.PlaneIntersection(1.0, { 1.0, 0.0 }, 0.0);
     autoc idPlaneIntersectedP = tree.PlaneIntersection({1.0, { 1.0, 0.0 }}, 0.0);

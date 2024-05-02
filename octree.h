@@ -214,10 +214,6 @@ namespace OrthoTree
       {
         TAdapter::GetBoxPlaneRelation(box, distanceOfOrigo, planeNormal, tolerance)
       } -> std::convertible_to<PlaneRelation>;
-    } && requires(TBox const& box, TVector const& rayBasePoint, TVector const& rayHeading, TGeometry tolerance) {
-      {
-        TAdapter::IsRayHit(box, rayBasePoint, rayHeading, tolerance)
-      } -> std::convertible_to<std::optional<double>>;
     } && requires(TBox const& box, TRay const& ray, TGeometry tolerance) {
       {
         TAdapter::IsRayHit(box, ray, tolerance)
@@ -456,9 +452,9 @@ namespace OrthoTree
       }
     }
 
-    static constexpr std::optional<double> IsRayHit(TBox const& box, TVector const& rayBasePoint, TVector const& rayHeading, TGeometry tolerance) noexcept
+    static constexpr std::optional<double> IsRayHit(TBox const& box, TRay const& ray, TGeometry tolerance) noexcept
     {
-      if (DoesBoxContainPoint(box, rayBasePoint, tolerance))
+      if (DoesBoxContainPoint(box, Base::GetRayOrigin(ray), tolerance))
         return 0.0;
 
       autoce inf = std::numeric_limits<double>::infinity();
@@ -467,25 +463,25 @@ namespace OrthoTree
       auto maxDistances = std::array<double, DIMENSION_NO>{};
       for (dim_t dimensionID = 0; dimensionID < DIMENSION_NO; ++dimensionID)
       {
-        autoc hComp = Base::GetPointC(rayHeading, dimensionID);
+        autoc hComp = Base::GetPointC(Base::GetRayDirection(ray), dimensionID);
         if (hComp == 0)
         {
           if (tolerance != 0.0)
           {
             assert(tolerance > 0);
-            if (Base::GetBoxMaxC(box, dimensionID) + tolerance <= Base::GetPointC(rayBasePoint, dimensionID))
+            if (Base::GetBoxMaxC(box, dimensionID) + tolerance <= Base::GetPointC(Base::GetRayOrigin(ray), dimensionID))
               return std::nullopt;
 
-            if (Base::GetBoxMinC(box, dimensionID) - tolerance >= Base::GetPointC(rayBasePoint, dimensionID))
+            if (Base::GetBoxMinC(box, dimensionID) - tolerance >= Base::GetPointC(Base::GetRayOrigin(ray), dimensionID))
               return std::nullopt;
 
           }
           else
           {
-            if (Base::GetBoxMaxC(box, dimensionID) < Base::GetPointC(rayBasePoint, dimensionID))
+            if (Base::GetBoxMaxC(box, dimensionID) < Base::GetPointC(Base::GetRayOrigin(ray), dimensionID))
               return std::nullopt;
 
-            if (Base::GetBoxMinC(box, dimensionID) > Base::GetPointC(rayBasePoint, dimensionID))
+            if (Base::GetBoxMinC(box, dimensionID) > Base::GetPointC(Base::GetRayOrigin(ray), dimensionID))
               return std::nullopt;
           }
 
@@ -495,10 +491,10 @@ namespace OrthoTree
         }
 
         minDistances[dimensionID] = ((hComp > 0.0 ? (Base::GetBoxMinC(box, dimensionID) - tolerance) : (Base::GetBoxMaxC(box, dimensionID) + tolerance)) -
-                                     Base::GetPointC(rayBasePoint, dimensionID)) /
+                                     Base::GetPointC(Base::GetRayOrigin(ray), dimensionID)) /
                                     hComp;
         maxDistances[dimensionID] = ((hComp < 0.0 ? (Base::GetBoxMinC(box, dimensionID) - tolerance) : (Base::GetBoxMaxC(box, dimensionID) + tolerance)) -
-                                     Base::GetPointC(rayBasePoint, dimensionID)) /
+                                     Base::GetPointC(Base::GetRayOrigin(ray), dimensionID)) /
                                     hComp;
       }
 
@@ -508,11 +504,6 @@ namespace OrthoTree
         return std::nullopt;
 
       return rMin < 0 ? rMax : rMin;
-    }
-
-    static constexpr std::optional<double> IsRayHit(TBox const& box, TRay const& ray, TGeometry tolerance) noexcept
-    {
-      return IsRayHit(box, Base::GetRayOrigin(ray), Base::GetRayDirection(ray), tolerance);
     }
 
     // Get point-Hyperplane relation (Plane equation: dotProduct(planeNormal, point) = distanceOfOrigo)
@@ -3525,33 +3516,31 @@ namespace OrthoTree
     void getRayIntersectedAll(
       Node const& node,
       std::span<TBox const> const& boxes,
-      TVector const& rayBasePoint,
-      TVector const& rayHeading,
+      TRay const& ray,
       TGeometry tolerance,
       TGeometry maxExaminationDistance,
       std::vector<EntityDistance>& foundEntities) const noexcept
     {
-      autoc isNodeHit = AD::IsRayHit(node.Box, rayBasePoint, rayHeading, tolerance);
+      autoc isNodeHit = AD::IsRayHit(node.Box, ray, tolerance);
       if (!isNodeHit)
         return;
 
       for (autoc entityID : node.Entities)
       {
-        autoc entityDistance = AD::IsRayHit(boxes[entityID], rayBasePoint, rayHeading, tolerance);
+        autoc entityDistance = AD::IsRayHit(boxes[entityID], ray, tolerance);
         if (entityDistance && (maxExaminationDistance == 0 || entityDistance.value() <= maxExaminationDistance))
           foundEntities.push_back({ { TGeometry(entityDistance.value()) }, entityID });
       }
 
       for (autoc childKey : node.GetChildren())
-        getRayIntersectedAll(this->GetNode(childKey), boxes, rayBasePoint, rayHeading, tolerance, maxExaminationDistance, foundEntities);
+        getRayIntersectedAll(this->GetNode(childKey), boxes, ray, tolerance, maxExaminationDistance, foundEntities);
     }
 
 
     void getRayIntersectedFirst(
       Node const& node,
       std::span<TBox const> const& boxes,
-      TVector const& rayBasePoint,
-      TVector const& rayHeading,
+      TRay const& ray,
       TGeometry tolerance,
       std::multiset<EntityDistance>& foundEntities) const noexcept
     {
@@ -3559,7 +3548,7 @@ namespace OrthoTree
         foundEntities.empty() ? std::numeric_limits<double>::infinity() : static_cast<double>(foundEntities.rbegin()->Distance);
       for (autoc entityID : node.Entities)
       {
-        autoc distance = AD::IsRayHit(boxes[entityID], rayBasePoint, rayHeading, tolerance);
+        autoc distance = AD::IsRayHit(boxes[entityID], ray, tolerance);
         if (!distance)
           continue;
 
@@ -3573,7 +3562,7 @@ namespace OrthoTree
       for (autoc childKey : node.GetChildren())
       {
         autoc& nodeChild = this->GetNode(childKey);
-        autoc distance = AD::IsRayHit(nodeChild.Box, rayBasePoint, rayHeading, tolerance);
+        autoc distance = AD::IsRayHit(nodeChild.Box, ray, tolerance);
         if (!distance)
           continue;
 
@@ -3584,22 +3573,21 @@ namespace OrthoTree
       }
 
       for (autoc& nodeDistance : nodeDistances)
-        getRayIntersectedFirst(nodeDistance.NodeReference, boxes, rayBasePoint, rayHeading, tolerance, foundEntities);
+        getRayIntersectedFirst(nodeDistance.NodeReference, boxes, ray, tolerance, foundEntities);
     }
 
 
   public:
     // Get all box which is intersected by the ray in order
     std::vector<std::size_t> RayIntersectedAll(
-      TVector const& rayBasePointPoint,
-      TVector const& rayHeading,
+      TRay const& ray,
       std::span<TBox const> const& boxes,
       TGeometry tolerance,
       TGeometry maxExaminationDistance = 0) const noexcept
     {
       auto foundEntities = std::vector<EntityDistance>();
       foundEntities.reserve(20);
-      getRayIntersectedAll(this->GetNode(this->GetRootKey()), boxes, rayBasePointPoint, rayHeading, tolerance, maxExaminationDistance, foundEntities);
+      getRayIntersectedAll(this->GetNode(this->GetRootKey()), boxes, ray, tolerance, maxExaminationDistance, foundEntities);
 
       autoc beginIteratorOfEntities = foundEntities.begin();
       auto endIteratorOfEntities = foundEntities.end();
@@ -3618,15 +3606,15 @@ namespace OrthoTree
 
     // Get first box which is intersected by the ray
     std::optional<std::size_t> RayIntersectedFirst(
-      TVector const& rayBasePoint, TVector const& rayHeading, std::span<TBox const> const& boxes, TGeometry tolerance) const noexcept
+      TRay const& ray, std::span<TBox const> const& boxes, TGeometry tolerance) const noexcept
     {
       autoc& node = this->GetNode(this->GetRootKey());
-      autoc distance = AD::IsRayHit(node.Box, rayBasePoint, rayHeading, tolerance);
+      autoc distance = AD::IsRayHit(node.Box, ray, tolerance);
       if (!distance)
         return std::nullopt;
 
       auto foundEntities = std::multiset<EntityDistance>();
-      getRayIntersectedFirst(node, boxes, rayBasePoint, rayHeading, tolerance, foundEntities);
+      getRayIntersectedFirst(node, boxes, ray, tolerance, foundEntities);
       if (foundEntities.empty())
         return std::nullopt;
 
