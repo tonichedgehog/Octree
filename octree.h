@@ -186,7 +186,7 @@ namespace OrthoTree
 
   template<class TAdapter, typename TVector, typename TBox, typename TRay, typename TPlane, typename TGeometry = double>
   concept AdaptorConcept =
-    requires { AdaptorBasicsConcept<TAdapter, TVector, TBox, TRay, TPlane, TGeometry>; } && requires(TBox const& box, TVector const& point) {
+    requires { requires AdaptorBasicsConcept<TAdapter, TVector, TBox, TRay, TPlane, TGeometry>; } && requires(TBox const& box, TVector const& point) {
       {
         TAdapter::DoesBoxContainPoint(box, point)
       } -> std::convertible_to<bool>;
